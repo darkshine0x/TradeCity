@@ -1,11 +1,12 @@
 use chrono::{Date, Local, DateTime};
-use crate::core::trade::Tradeable;
+use crate::core::assets::Tradeable;
 
 pub struct Currency {
     pub iso_code: String,
     pub name: String
 }
 
+#[derive(Copy, Clone)]
 pub struct Price {
     currency: &'static Currency,
     value: f64
