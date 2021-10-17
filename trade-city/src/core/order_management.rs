@@ -12,6 +12,7 @@ pub mod orderutils {
         underlying: &'static T,
         amount: f64,
         is_fully_executed: bool,
+        is_sell_order: bool,
         order_type: OrderType
     }
 
@@ -29,7 +30,8 @@ pub mod orderutils {
                 underlying,
                 amount,
                 order_type,
-                is_fully_executed: false
+                is_fully_executed: false,
+                is_sell_order: amount < 0.0
             };
 
             Ok(new_order)
@@ -39,12 +41,16 @@ pub mod orderutils {
             &self.underlying
         }
 
-        pub fn amount(&self) -> f64 {
+        pub fn amount(self) -> f64 {
             self.amount
         }
 
-        pub fn is_fully_executed(&self) -> bool {
+        pub fn is_fully_executed(self) -> bool {
             self.is_fully_executed
+        }
+
+        pub fn is_sell_order(self) -> bool {
+            self.is_sell_order
         }
 
         pub fn order_type(&self) -> &OrderType {
@@ -72,7 +78,7 @@ pub mod orderutils {
 pub mod orderbook {
     use crate::assets::Tradeable;
     use std::collections::{VecDeque, HashMap};
-    use crate::orderutils::Order;
+    use crate::orderutils::{Order, OrderType};
     use crate::trade::Response;
 
     struct OrderQueue<T> where T: Tradeable + 'static {
@@ -85,14 +91,52 @@ pub mod orderbook {
         order_queue_map: HashMap<f64, OrderQueue<T>>
     }
 
-    impl<T> Orderbook<T> {
+    impl<T> Orderbook<T> where T: Tradeable + 'static {
         pub fn underlying(&self) -> &T {
             &self.underlying
         }
 
-        pub fn place_order(order: Order<T>) -> Response {
+        pub fn place_order(&self, order: Order<T>) -> Response {
+            // determine order queue
+            match order.order_type() {
+                OrderType::AtMarket => {
+                    // TODO: Adjust key type so that an "at market" key is possible
+                },
+                OrderType::Limit(price) => {
+
+                }
+            }
+
             // trigger matching
             Response::Placement
         }
     }
 }
+
+pub mod placement {
+    use std::collections::{VecDeque, HashMap};
+    use crate::orderutils::Order;
+    use crate::assets::Tradeable;
+    use crate::orderbook::Orderbook;
+    use std::hash::Hash;
+
+    pub struct Placer<T> where T: Tradeable + 'static + Eq + Hash {
+        placer_queue: VecDeque<Order<T>>,
+        orderbooks: HashMap<T, Orderbook<T>>
+    }
+
+    impl<T> Placer<T> where T: Tradeable + 'static + Eq + Hash {
+        pub fn push_to_queue(&mut self, order: Order<T>) {
+            self.placer_queue.push_back(order);
+        }
+
+        fn place(&mut self) {
+            let next_order = self.placer_queue.pop_front();
+            if let Some(order) = next_order {
+                if let Some(orderbook) = self.orderbooks.get(order.underlying()) {
+                    orderbook.place_order(order);
+                }
+            }
+        }
+    }
+ }
