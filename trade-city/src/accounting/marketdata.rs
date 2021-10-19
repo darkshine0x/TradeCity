@@ -1,19 +1,21 @@
 use chrono::{Date, Local, DateTime};
 use crate::core::assets::Tradeable;
+use rust_decimal::Decimal;
 
+#[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Currency {
     pub iso_code: String,
     pub name: String
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Price {
     currency: &'static Currency,
-    value: f64
+    value: Decimal
 }
 
 impl Price {
-    pub fn new(currency: &'static Currency, value: f64) -> Price {
+    pub fn new(currency: &'static Currency, value: Decimal) -> Price {
         Price {
             currency,
             value
@@ -24,7 +26,7 @@ impl Price {
         &self.currency
     }
 
-    pub fn value(&self) -> f64 {
+    pub fn value(&self) -> Decimal {
         self.value
     }
 }
@@ -54,7 +56,7 @@ impl<T> MarketDataPrice<T> where T: Tradeable + 'static {
     }
 
     pub fn underlying(&self) -> &T {
-        &self.underlying
+        self.underlying
     }
 
     pub fn price(&self) -> &Price {
